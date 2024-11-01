@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Shake&Tune: 3D printer analysis tools
 #
 # Copyright (C) 2024 Félix Boisselier <felix@fboisselier.fr> (Frix_x on Discord)
