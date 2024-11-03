@@ -13,10 +13,15 @@ from pathlib import Path
 
 from .commands import (
     axes_map_calibration,
+    axes_map_calibration_web,
     axes_shaper_calibration,
+    axes_shaper_calibration_web,
     compare_belts_responses,
+    compare_belts_responses_web,
     create_vibrations_profile,
+    create_vibrations_profile_web,
     excitate_axis_at_freq,
+    excitate_axis_at_freq_web,
 )
 from .graph_creators import (
     AxesMapGraphCreator,
@@ -64,6 +69,14 @@ class ShakeTune:
                 ),
             ),
             (
+                'EXCITATE_AXIS_AT_FREQ_WEB',
+                self.cmd_EXCITATE_AXIS_AT_FREQ_WEB,
+                (
+                    'Web version: Maintain a specified excitation frequency for a period '
+                    'of time to diagnose and locate a source of vibrations'
+                ),
+            ),
+            (
                 'AXES_MAP_CALIBRATION',
                 self.cmd_AXES_MAP_CALIBRATION,
                 (
@@ -71,6 +84,15 @@ class ShakeTune:
                     'and help you set the best axes_map configuration for your printer'
                 ),
             ),
+            {
+                'AXES_MAP_CALIBRATION_WEB': (
+                self.cmd_AXES_MAP_CALIBRATION_WEB,
+                (
+                    'Web version: Perform a set of movements to measure the orientation of the accelerometer '
+                    'and help you set the best axes_map configuration for your printer'
+                ),
+                )
+            },
             (
                 'COMPARE_BELTS_RESPONSES',
                 self.cmd_COMPARE_BELTS_RESPONSES,
@@ -79,11 +101,25 @@ class ShakeTune:
                     'frequency profiles of individual belts on CoreXY or CoreXZ printers'
                 ),
             ),
+            {
+                'COMPARE_BELTS_RESPONSES_WEB': (
+                self.cmd_COMPARE_BELTS_RESPONSES_WEB,
+                (
+                    'Web version: Perform a custom half-axis test to analyze and compare the '
+                    'frequency profiles of individual belts on CoreXY or CoreXZ printers'
+                ),
+                )
+            },
             (
                 'AXES_SHAPER_CALIBRATION',
                 self.cmd_AXES_SHAPER_CALIBRATION,
                 'Perform standard axis input shaper tests on one or both XY axes to select the best input shaper filter',
             ),
+            {
+                'AXES_SHAPER_CALIBRATION_WEB',
+                self.cmd_AXES_SHAPER_CALIBRATION_WEB,
+                'Web version: Perform standard axis input shaper tests on one or both XY axes to select the best input shaper filter',
+            },
             (
                 'CREATE_VIBRATIONS_PROFILE',
                 self.cmd_CREATE_VIBRATIONS_PROFILE,
@@ -92,6 +128,15 @@ class ShakeTune:
                     'exposed to VFAs to optimize your slicer speed profiles and TMC driver parameters'
                 ),
             ),
+            {
+                'CREATE_VIBRATIONS_PROFILE_WEB': (
+                self.cmd_CREATE_VIBRATIONS_PROFILE_WEB,
+                (
+                    'Web version: Run a series of motions to find speed/angle ranges where the printer could be '
+                    'exposed to VFAs to optimize your slicer speed profiles and TMC driver parameters'
+                ),
+                )
+            },
         ]
         command_descriptions = {name: desc for name, _, desc in measurement_commands}
         for name, command, description in measurement_commands:
@@ -139,6 +184,17 @@ class ShakeTune:
         )
         excitate_axis_at_freq(gcmd, self._pconfig, st_process)
 
+    def cmd_EXCITATE_AXIS_AT_FREQ_WEB(self, gcmd) -> None:
+        ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
+        static_freq_graph_creator = StaticGraphCreator(self._config)
+        st_process = ShakeTuneProcess(
+            self._config,
+            self._printer.get_reactor(),
+            static_freq_graph_creator,
+            self.timeout,
+        )
+        excitate_axis_at_freq_web(gcmd, self._pconfig, st_process)
+
     def cmd_AXES_MAP_CALIBRATION(self, gcmd) -> None:
         ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
         axes_map_graph_creator = AxesMapGraphCreator(self._config)
@@ -149,6 +205,17 @@ class ShakeTune:
             self.timeout,
         )
         axes_map_calibration(gcmd, self._pconfig, st_process)
+
+    def cmd_AXES_MAP_CALIBRATION_WEB(self, gcmd) -> None:
+        ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
+        axes_map_graph_creator = AxesMapGraphCreator(self._config)
+        st_process = ShakeTuneProcess(
+            self._config,
+            self._printer.get_reactor(),
+            axes_map_graph_creator,
+            self.timeout,
+        )
+        axes_map_calibration_web(gcmd, self._pconfig, st_process)
 
     def cmd_COMPARE_BELTS_RESPONSES(self, gcmd) -> None:
         ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
@@ -161,6 +228,17 @@ class ShakeTune:
         )
         compare_belts_responses(gcmd, self._pconfig, st_process)
 
+    def cmd_COMPARE_BELTS_RESPONSES_WEB(self, gcmd) -> None:
+        ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
+        belt_graph_creator = BeltsGraphCreator(self._config)
+        st_process = ShakeTuneProcess(
+            self._config,
+            self._printer.get_reactor(),
+            belt_graph_creator,
+            self.timeout,
+        )
+        compare_belts_responses_web(gcmd, self._pconfig, st_process)
+
     def cmd_AXES_SHAPER_CALIBRATION(self, gcmd) -> None:
         ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
         shaper_graph_creator = ShaperGraphCreator(self._config)
@@ -172,6 +250,17 @@ class ShakeTune:
         )
         axes_shaper_calibration(gcmd, self._pconfig, st_process)
 
+    def cmd_AXES_SHAPER_CALIBRATION_WEB(self, gcmd) -> None:
+        ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
+        shaper_graph_creator = ShaperGraphCreator(self._config)
+        st_process = ShakeTuneProcess(
+            self._config,
+            self._printer.get_reactor(),
+            shaper_graph_creator,
+            self.timeout,
+        )
+        axes_shaper_calibration_web(gcmd, self._pconfig, st_process)
+
     def cmd_CREATE_VIBRATIONS_PROFILE(self, gcmd) -> None:
         ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
         vibration_profile_creator = VibrationsGraphCreator(self._config)
@@ -182,3 +271,14 @@ class ShakeTune:
             self.timeout,
         )
         create_vibrations_profile(gcmd, self._pconfig, st_process)
+
+    def cmd_CREATE_VIBRATIONS_PROFILE_WEB(self, gcmd) -> None:
+        ConsoleOutput.print(f'Shake&Tune version: {ShakeTuneConfig.get_git_version()}')
+        vibration_profile_creator = VibrationsGraphCreator(self._config)
+        st_process = ShakeTuneProcess(
+            self._config,
+            self._printer.get_reactor(),
+            vibration_profile_creator,
+            self.timeout,
+        )
+        create_vibrations_profile_web(gcmd, self._pconfig, st_process)
