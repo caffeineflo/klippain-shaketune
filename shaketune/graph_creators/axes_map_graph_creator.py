@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
 import pywt
-from scipy import stats
 
 matplotlib.use('Agg')
 
@@ -164,11 +163,25 @@ def find_nearest_perfect_vector(average_direction_vector: np.ndarray) -> Tuple[n
     return nearest_vector, angle_error
 
 
+def linear_regression(x: np.ndarray, y: np.ndarray) -> tuple:
+    """Calculate slope and intercept using numpy"""
+    x_mean = np.mean(x)
+    y_mean = np.mean(y)
+    
+    # Calculate slope using covariance and variance
+    numerator = np.sum((x - x_mean) * (y - y_mean))
+    denominator = np.sum((x - x_mean) ** 2)
+    slope = numerator / denominator
+    
+    # Calculate intercept using means
+    intercept = y_mean - slope * x_mean
+    
+    return slope, intercept
+
 def linear_regression_direction(
     position_x: np.ndarray, position_y: np.ndarray, position_z: np.ndarray, trim_length: float = 0.25
 ) -> np.ndarray:
-    # Trim the start and end of the position data to keep only the center of the segment
-    # as the start and stop positions are not always perfectly aligned and can be a bit noisy
+    # Trim the start and end of the position data
     t = len(position_x)
     trim_start = int(t * trim_length)
     trim_end = int(t * (1 - trim_length))
@@ -176,16 +189,22 @@ def linear_regression_direction(
     position_y = position_y[trim_start:trim_end]
     position_z = position_z[trim_start:trim_end]
 
-    # Compute the direction vector using linear regression over the position data
+    # Compute direction vector using custom linear regression
     time = np.arange(len(position_x))
-    slope_x, intercept_x, _, _, _ = stats.linregress(time, position_x)
-    slope_y, intercept_y, _, _, _ = stats.linregress(time, position_y)
-    slope_z, intercept_z, _, _, _ = stats.linregress(time, position_z)
-    end_position = np.array(
-        [slope_x * time[-1] + intercept_x, slope_y * time[-1] + intercept_y, slope_z * time[-1] + intercept_z]
-    )
-    direction_vector = end_position - np.array([intercept_x, intercept_y, intercept_z])
+    slope_x, intercept_x = linear_regression(time, position_x)
+    slope_y, intercept_y = linear_regression(time, position_y)
+    slope_z, intercept_z = linear_regression(time, position_z)
+    
+    # Calculate end position and direction vector
+    end_position = np.array([
+        slope_x * time[-1] + intercept_x,
+        slope_y * time[-1] + intercept_y,
+        slope_z * time[-1] + intercept_z
+    ])
+    start_position = np.array([intercept_x, intercept_y, intercept_z])
+    direction_vector = end_position - start_position
     direction_vector = direction_vector / np.linalg.norm(direction_vector)
+    
     return direction_vector
 
 

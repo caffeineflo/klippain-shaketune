@@ -21,7 +21,6 @@ import matplotlib.font_manager
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import numpy as np
-from scipy.stats import pearsonr
 
 matplotlib.use('Agg')
 
@@ -523,7 +522,7 @@ def belts_calibration(
 
     # R² proved to be pretty instable to compute the similarity between the two belts
     # So now, we use the Pearson correlation coefficient to compute the similarity
-    correlation, _ = pearsonr(signal1.psd, signal2.psd)
+    correlation = calculate_pearson(signal1.psd, signal2.psd)
     similarity_factor = correlation * 100
     similarity_factor = np.clip(similarity_factor, 0, 100)
     ConsoleOutput.print(f'Belts estimated similarity: {similarity_factor:.1f}%')
@@ -589,6 +588,28 @@ def belts_calibration(
 
     return fig
 
+def calculate_pearson(x: np.ndarray, y: np.ndarray) -> float:
+    # Ensure same length
+    if len(x) != len(y):
+        raise ValueError("Arrays must be same length")
+    
+    n = len(x)
+    
+    # Calculate means
+    mean_x = np.mean(x)
+    mean_y = np.mean(y)
+    
+    # Calculate covariance
+    covariance = np.sum((x - mean_x) * (y - mean_y)) / n
+    
+    # Calculate standard deviations
+    std_x = np.sqrt(np.sum((x - mean_x) ** 2) / n)
+    std_y = np.sqrt(np.sum((y - mean_y) ** 2) / n)
+    
+    # Calculate correlation
+    correlation = covariance / (std_x * std_y)
+    
+    return correlation
 
 def main():
     # Parse command-line arguments

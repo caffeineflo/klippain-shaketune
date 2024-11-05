@@ -17,7 +17,6 @@ from importlib import import_module
 from pathlib import Path
 
 import numpy as np
-from scipy.signal import spectrogram
 
 from .console_output import ConsoleOutput
 
@@ -104,24 +103,33 @@ def get_git_version():
         return None
 
 
-# This is Klipper's spectrogram generation function adapted to use Scipy
+# This is Klipper's spectrogram generation function
 def compute_spectrogram(data):
     N = data.shape[0]
     Fs = N / (data[-1, 0] - data[0, 0])
     # Round up to a power of 2 for faster FFT
     M = 1 << int(0.5 * Fs - 1).bit_length()
     window = np.kaiser(M, 6.0)
+    noverlap = M // 2
 
     def _specgram(x):
-        return spectrogram(
-            x, fs=Fs, window=window, nperseg=M, noverlap=M // 2, detrend='constant', scaling='density', mode='psd'
-        )
+        step = M - noverlap
+        shape = (x.size - noverlap) // step, M
+        strides = x.strides[0] * step, x.strides[0]
+        segments = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
+        windowed_segments = segments * window
+        result = np.fft.rfft(windowed_segments, axis=-1)
+        psd = np.abs(result) ** 2
+        psd /= np.sum(window ** 2)
+        psd /= Fs
+        return psd.mean(axis=0), np.fft.rfftfreq(M, 1 / Fs)
 
     d = {'x': data[:, 1], 'y': data[:, 2], 'z': data[:, 3]}
-    f, t, pdata = _specgram(d['x'])
+    pdata, f = _specgram(d['x'])
     for axis in 'yz':
-        pdata += _specgram(d[axis])[2]
-    return pdata, t, f
+        psd, _ = _specgram(d[axis])
+        pdata += psd
+    return pdata, None, f
 
 
 # Compute natural resonant frequency and damping ratio by using the half power bandwidth method with interpolated frequencies
